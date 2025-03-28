@@ -7950,7 +7950,6 @@ dependencies = [
  "move-core-types",
  "serde",
  "serde_json",
- "variant_count",
  "zstd 0.13.2",
 ]
 
