@@ -81,37 +81,6 @@ pub struct ExternalDependency {
     r: toml::Value,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(bound = "")]
-#[serde(rename = "kebab-case")]
-pub struct ExternalResolverRequest<F: MoveFlavor> {
-    argument: toml::Value,
-
-    #[serde(default)]
-    environment_id: Option<F::EnvironmentID>,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(bound = "")]
-pub enum ExternalResolverResult<F: MoveFlavor> {
-    Error(String),
-    Success {
-        #[serde(default)]
-        warnings: Vec<String>,
-        resolved: ManifestDependencyInfo<F>,
-    },
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(bound = "")]
-pub struct ExternalResolverResponse<F: MoveFlavor> {
-    #[serde(flatten)]
-    request: ExternalResolverRequest<F>,
-
-    #[serde(flatten)]
-    result: ExternalResolverResult<F>,
-}
-
 impl ExternalDependency {
     /// Invoke the external binaries and deserialize their outputs as dependencies, then pin the
     /// dependencies.
@@ -119,5 +88,57 @@ impl ExternalDependency {
         deps: &DependencySet<ExternalDependency>,
     ) -> PackageResult<DependencySet<PinnedDependencyInfo<F>>> {
         todo!()
+    }
+}
+
+/// Types for the wire protocol for external resolvers
+mod protocol {
+    use serde::{Deserialize, Serialize};
+
+    use crate::{dependency::ManifestDependencyInfo, flavor::MoveFlavor};
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(bound = "")]
+    #[serde(rename = "kebab-case")]
+    pub struct Request<F: MoveFlavor> {
+        flavor: String,
+        requests: Vec<Query<F>>,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(bound = "")]
+    pub struct Response<F: MoveFlavor> {
+        responses: Vec<QueryResponse<F>>,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(bound = "")]
+    #[serde(rename = "kebab-case")]
+    pub struct Query<F: MoveFlavor> {
+        argument: toml::Value,
+
+        #[serde(default)]
+        environment_id: Option<F::EnvironmentID>,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(bound = "")]
+    pub enum Result<F: MoveFlavor> {
+        Error(String),
+        Success {
+            #[serde(default)]
+            warnings: Vec<String>,
+            resolved: ManifestDependencyInfo<F>,
+        },
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(bound = "")]
+    pub struct QueryResponse<F: MoveFlavor> {
+        #[serde(flatten)]
+        request: Request<F>,
+
+        #[serde(flatten)]
+        result: Result<F>,
     }
 }
