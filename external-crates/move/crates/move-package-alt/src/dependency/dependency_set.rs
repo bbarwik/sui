@@ -2,12 +2,15 @@
 //! package
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::package::{EnvironmentName, PackageName};
 
 /// A set of default dependencies and dep overrides. Within each environment, package names are
 /// unique
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DependencySet<T> {
+    #[serde(flatten)]
     inner: BTreeMap<Option<EnvironmentName>, BTreeMap<PackageName, T>>,
 }
 

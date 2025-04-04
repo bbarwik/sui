@@ -62,7 +62,7 @@ pub trait MoveFlavor {
     /// example, an environment ID might be a chain identifier
     //
     // TODO: Given an [EnvironmentID] and an [ObjectID], ... should be uniquely determined
-    type EnvironmentID: Serialize + DeserializeOwned + Clone + Eq;
+    type EnvironmentID: Serialize + DeserializeOwned + Clone + Eq + Ord;
 
     /// Return the implicit dependencies for a given environment
     fn implicit_deps(
