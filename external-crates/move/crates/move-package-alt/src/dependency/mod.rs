@@ -6,11 +6,19 @@ mod external;
 mod git;
 mod local;
 
+mod dependency_set;
+
+pub use dependency_set::DependencySet;
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::PackageResult, flavor::MoveFlavor, package::PackageName};
+use crate::{
+    errors::PackageResult,
+    flavor::MoveFlavor,
+    package::{EnvironmentName, PackageName},
+};
 
 use derive_where::derive_where;
 use external::ExternalDependency;
@@ -58,18 +66,16 @@ pub enum PinnedDependencyInfo<F: MoveFlavor + ?Sized> {
 
 /// Replace all dependencies with their pinned versions. The returned map is guaranteed to have the
 /// same keys as [deps].
-// TODO: this needs to change to support the fact that external resolvers return different results
-// depending on the environment
 fn pin<F: MoveFlavor>(
-    deps: BTreeMap<PackageName, ManifestDependencyInfo<F>>,
-) -> PackageResult<BTreeMap<PackageName, PinnedDependencyInfo<F>>> {
+    deps: DependencySet<ManifestDependencyInfo<F>>,
+) -> PackageResult<DependencySet<PinnedDependencyInfo<F>>> {
     todo!()
 }
 
 /// Ensure that all dependencies are stored locally and return the paths to their contents. The
 /// returned map is guaranteed to have the same keys as [deps].
 fn fetch<F: MoveFlavor>(
-    deps: BTreeMap<PackageName, PinnedDependencyInfo<F>>,
-) -> PackageResult<BTreeMap<PackageName, PinnedDependencyInfo<F>>> {
+    deps: DependencySet<PinnedDependencyInfo<F>>,
+) -> PackageResult<DependencySet<PinnedDependencyInfo<F>>> {
     todo!()
 }
