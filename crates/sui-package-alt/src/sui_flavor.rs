@@ -46,7 +46,7 @@ impl MoveFlavor for SuiFlavor {
 
     fn implicit_deps(
         &self,
-        id: impl Iterator<Item = Self::EnvironmentID>,
+        environments: impl Iterator<Item = Self::EnvironmentID>,
     ) -> DependencySet<PinnedDependencyInfo<Self>> {
         todo!()
     }

@@ -35,7 +35,7 @@ impl MoveFlavor for Vanilla {
 
     fn implicit_deps(
         &self,
-        environment: impl Iterator<Item = Self::EnvironmentID>,
+        environments: impl Iterator<Item = Self::EnvironmentID>,
     ) -> DependencySet<PinnedDependencyInfo<Self>> {
         empty().collect()
     }
