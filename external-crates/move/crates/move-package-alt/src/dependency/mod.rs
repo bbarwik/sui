@@ -10,7 +10,7 @@ mod dependency_set;
 
 pub use dependency_set::DependencySet;
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -64,11 +64,68 @@ pub enum PinnedDependencyInfo<F: MoveFlavor + ?Sized> {
     FlavorSpecific(F::FlavorDependency<Pinned>),
 }
 
+/// Split up deps into kinds. The union of the output sets is the same as [deps]
+fn split<F: MoveFlavor>(
+    deps: &DependencySet<ManifestDependencyInfo<F>>,
+) -> (
+    DependencySet<GitDependency<Unpinned>>,
+    DependencySet<ExternalDependency>,
+    DependencySet<LocalDependency>,
+    DependencySet<F::FlavorDependency<Unpinned>>,
+) {
+    let mut gits = DependencySet::new();
+    let mut exts = DependencySet::new();
+    let mut locs = DependencySet::new();
+    let mut flav = DependencySet::new();
+
+    for (env, package_name, dep) in deps.clone().into_iter() {
+        match dep {
+            ManifestDependencyInfo::Git(info) => gits.insert(env, package_name, info),
+            ManifestDependencyInfo::External(info) => exts.insert(env, package_name, info),
+            ManifestDependencyInfo::Local(info) => locs.insert(env, package_name, info),
+            ManifestDependencyInfo::FlavorSpecific(info) => flav.insert(env, package_name, info),
+        }
+    }
+
+    (gits, exts, locs, flav)
+}
+
 /// Replace all dependencies with their pinned versions. The returned map is guaranteed to have the
 /// same keys as [deps].
 fn pin<F: MoveFlavor>(
-    deps: DependencySet<ManifestDependencyInfo<F>>,
+    flavor: &F,
+    deps: &DependencySet<ManifestDependencyInfo<F>>, // TODO: maybe take by value?
 ) -> PackageResult<DependencySet<PinnedDependencyInfo<F>>> {
+    let (gits, exts, locs, flav) = split(deps);
+
+    let pinned_gits = GitDependency::pin(&gits)
+        .unwrap() // TODO: error collection!
+        .map(|dep| PinnedDependencyInfo::Git::<F>(dep.clone()));
+
+    let pinned_exts = ExternalDependency::resolve::<F>(&exts).unwrap(); // TODO: errors!
+
+    let pinned_locs = locs.map(|dep| PinnedDependencyInfo::Local::<F>(dep.clone()));
+
+    let pinned_flav = flavor
+        .pin(flav)
+        .unwrap() // TODO: Errors!
+        .map(|dep| PinnedDependencyInfo::FlavorSpecific::<F>(dep.clone()));
+
+    Ok(DependencySet::merge([
+        pinned_gits,
+        pinned_exts,
+        pinned_locs,
+        pinned_flav,
+    ]))
+}
+
+/// For each environment, if none of the implicit dependencies are present in [deps] (or the
+/// default environment), then they are all added.
+// TODO: what's the notion of identity used here?
+fn add_implicit_deps<F: MoveFlavor>(
+    flavor: &F,
+    deps: &mut DependencySet<PinnedDependencyInfo<F>>,
+) -> PackageResult<()> {
     todo!()
 }
 
@@ -76,6 +133,6 @@ fn pin<F: MoveFlavor>(
 /// returned map is guaranteed to have the same keys as [deps].
 fn fetch<F: MoveFlavor>(
     deps: DependencySet<PinnedDependencyInfo<F>>,
-) -> PackageResult<DependencySet<PinnedDependencyInfo<F>>> {
+) -> PackageResult<DependencySet<PathBuf>> {
     todo!()
 }
