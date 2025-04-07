@@ -505,7 +505,11 @@ impl TestCheckpointDataBuilder {
         let lamport_version = effects.lamport_version();
         let input_objects: Vec<_> = mutated_objects
             .keys()
-            .chain(shared_inputs.keys())
+            .chain(
+                shared_inputs
+                    .iter()
+                    .filter_map(|(id, i)| i.mutable.then_some(id)),
+            )
             .map(|id| self.live_objects.get(id).unwrap().clone())
             .chain(deleted_objects.clone())
             .chain(wrapped_objects.clone())
@@ -517,7 +521,11 @@ impl TestCheckpointDataBuilder {
             .values()
             .cloned()
             .chain(mutated_objects.values().cloned())
-            .chain(shared_inputs.values().map(|input| input.object.clone()))
+            .chain(
+                shared_inputs
+                    .values()
+                    .filter_map(|i| i.mutable.then(|| i.object.clone())),
+            )
             .chain(unwrapped_objects.clone())
             .chain(std::iter::once(
                 self.live_objects.get(&gas.0).cloned().unwrap(),
@@ -674,16 +682,6 @@ impl TestCheckpointDataBuilder {
     /// Derive an address from an index.
     pub fn derive_address(address_idx: u8) -> SuiAddress {
         dbg_addr(address_idx)
-    }
-
-    /// Get mutable access to all transactions in the current checkpoint
-    pub fn transactions_mut(&mut self) -> &mut Vec<CheckpointTransaction> {
-        &mut self.checkpoint_builder.transactions
-    }
-
-    /// Get mutable access to a specific transaction by index
-    pub fn transaction_mut(&mut self, idx: usize) -> Option<&mut CheckpointTransaction> {
-        self.checkpoint_builder.transactions.get_mut(idx)
     }
 
     /// Add a shared input to the transaction, being accessed from the currently recorded live
